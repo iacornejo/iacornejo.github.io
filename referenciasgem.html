@@ -1,85 +1,188 @@
 <!DOCTYPE html>
 <html lang="es">
-<head>
-  <meta charset="UTF-8">
-  <title>Analizador de Referencias</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      margin: 20px;
-    }
-    textarea {
-      width: 100%;
-      max-width: 600px;
-      height: 150px;
-      padding: 10px;
-      font-size: 14px;
-    }
-    button {
-      margin-top: 10px;
-      padding: 10px 20px;
-      font-size: 14px;
-      cursor: pointer;
-    }
-    ul {
-      list-style-type: none;
-      padding: 0;
-    }
-    li {
-      margin: 5px 0;
-    }
-    a {
-      text-decoration: none;
-      color: blue;
-    }
-  </style>
-</head>
-<body>
-  <h2>Analizador de Referencias</h2>
-  <textarea id="inputText" placeholder="Copia aquí la lista de referencias..."></textarea>
-  <br>
-  <button onclick="analizar()">Analizar</button>
-  <div id="result"></div>
+  <head>
+    <meta charset="UTF-8" />
+    <title>Analizador de Referencias</title>
+    <!-- Incluir React, ReactDOM y Babel desde sus CDNs -->
+    <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+    <script src="https://unpkg.com/@babel/standalone@7/babel.min.js"></script>
 
-  <script>
-    function analizar() {
-      const texto = document.getElementById('inputText').value;
-      const lineas = texto.split('\n');
-      const ul = document.createElement('ul');
-      let encontrado = false;
-      // Expresión regular para detectar URLs que comiencen con http:// o https://
-      const urlRegex = /https?:\/\/[^\s]+/g;
+    <!-- Lucide React para los iconos -->
+    <script src="https://unpkg.com/lucide-react/dist/lucide-react.min.js"></script>
+    <!-- Nota: la librería lucide-react oficial asume un entorno de empaquetado; esta CDN sirve de demo
+         y podría requerir adaptaciones para una integración fluida. -->
+         
+    <style>
+      /* Puedes pegar aquí tus estilos Tailwind generados o un pequeño CSS manual, 
+         si no estás usando un pipeline de construcción, pero no tendrás las utilidades de Tailwind 
+         a menos que lo integres adecuadamente. */
+    </style>
+  </head>
+  <body>
+    <!-- Contenedor donde montaremos nuestra app React -->
+    <div id="root"></div>
 
-      lineas.forEach(linea => {
-        const trimmed = linea.trim();
-        if (trimmed.length > 0) {
-          const urls = trimmed.match(urlRegex);
-          if (urls) {
-            // Se toma la primera URL encontrada en la línea
-            const url = urls[0];
-            const li = document.createElement('li');
-            const a = document.createElement('a');
-            a.href = url;
-            a.target = '_blank';
-            a.rel = 'noopener noreferrer';
-            // Se muestra el texto completo de la línea como descripción del enlace
-            a.textContent = trimmed;
-            li.appendChild(a);
-            ul.appendChild(li);
-            encontrado = true;
-          }
+    <!-- Aquí va el código React en Babel -->
+    <script type="text/babel">
+      const { useState } = React;
+      const { FileText, Globe } = lucideReact;
+
+      function getDomainFromUrl(url) {
+        try {
+          const { hostname } = new URL(url);
+          return hostname;
+        } catch {
+          return "";
         }
-      });
-
-      const resultDiv = document.getElementById('result');
-      // Se limpia el contenido previo del área de resultados
-      resultDiv.innerHTML = "";
-      if (encontrado) {
-        resultDiv.appendChild(ul);
-      } else {
-        resultDiv.textContent = "No se encontraron referencias con URL.";
       }
-    }
-  </script>
-</body>
+
+      function ReferencesApp() {
+        const [inputText, setInputText] = useState("");
+        const [references, setReferences] = useState([]);
+
+        function handleProcess() {
+          const lines = inputText.split(/\\r?\\n/).filter((line) => line.trim() !== "");
+          const parsed = lines.map((line) => {
+            const httpIndex = line.indexOf("http");
+            if (httpIndex !== -1) {
+              const url = line.substring(httpIndex).trim();
+              const textBefore = line.substring(0, httpIndex).trim();
+              const isPDF = /\\.pdf(\\?.*)?$/i.test(url);
+              const domain = getDomainFromUrl(url);
+
+              return {
+                fullText: line,
+                referenceText: textBefore,
+                url: url,
+                isPDF: isPDF,
+                domain: domain,
+              };
+            } else {
+              return {
+                fullText: line,
+                referenceText: line,
+                url: "",
+                isPDF: false,
+                domain: "",
+              };
+            }
+          });
+          setReferences(parsed);
+        }
+
+        return (
+          <div style={{ minHeight: '100vh', backgroundColor: '#F9FAFB' /* gris claro */ }}>
+            <div style={{
+              maxWidth: '768px',
+              margin: 'auto',
+              backgroundColor: 'white',
+              padding: '24px',
+              borderRadius: '16px',
+              marginTop: '24px',
+              boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+            }}>
+              <h1 style={{ fontSize: '1.5rem', fontWeight: 'bold', marginBottom: '0.5rem', color: '#1F2937' }}>
+                Analizador de Referencias
+              </h1>
+              <p style={{ fontSize: '0.875rem', color: '#4B5563', marginBottom: '1rem' }}>
+                Ingrese o pegue sus referencias y haga clic en “Analizar”.
+              </p>
+              <textarea
+                style={{
+                  width: '100%',
+                  height: '100px',
+                  padding: '8px',
+                  border: '1px solid #D1D5DB',
+                  borderRadius: '8px',
+                  marginBottom: '1rem'
+                }}
+                placeholder="Pega aquí tus referencias..."
+                value={inputText}
+                onChange={(e) => setInputText(e.target.value)}
+              />
+              <button
+                style={{
+                  padding: '8px 16px',
+                  backgroundColor: '#1D4ED8',
+                  color: '#FFF',
+                  border: 'none',
+                  borderRadius: '8px',
+                  fontWeight: '600',
+                  cursor: 'pointer'
+                }}
+                onClick={handleProcess}
+              >
+                Analizar
+              </button>
+
+              <div style={{ marginTop: '24px' }}>
+                {references.map((ref, index) => (
+                  <div
+                    key={index}
+                    style={{
+                      padding: '16px',
+                      borderRadius: '12px',
+                      border: '1px solid #E5E7EB',
+                      backgroundColor: '#FFF',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      marginBottom: '16px',
+                    }}
+                  >
+                    <div style={{ flex: 1, marginBottom: '8px' }}>
+                      <p style={{ fontSize: '0.875rem', color: '#374151', margin: 0 }}>
+                        {ref.referenceText}
+                      </p>
+                      {ref.domain && (
+                        <p style={{ fontSize: '0.75rem', color: '#6B7280', margin: '4px 0 0' }}>
+                          Origen: {ref.domain}
+                        </p>
+                      )}
+                    </div>
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      marginTop: '8px'
+                    }}>
+                      {ref.isPDF ? (
+                        <div style={{ display: 'flex', alignItems: 'center', color: '#DC2626' }}>
+                          <FileText style={{ width: '16px', height: '16px', marginRight: '4px' }} />
+                          <span style={{ fontSize: '0.875rem', fontWeight: '500' }}>PDF</span>
+                        </div>
+                      ) : (
+                        <div style={{ display: 'flex', alignItems: 'center', color: '#2563EB' }}>
+                          <Globe style={{ width: '16px', height: '16px', marginRight: '4px' }} />
+                          <span style={{ fontSize: '0.875rem', fontWeight: '500' }}>No PDF</span>
+                        </div>
+                      )}
+                      {ref.url && (
+                        <button
+                          style={{
+                            padding: '4px 8px',
+                            backgroundColor: '#059669',
+                            color: '#FFF',
+                            border: 'none',
+                            borderRadius: '6px',
+                            fontSize: '0.875rem',
+                            cursor: 'pointer'
+                          }}
+                          onClick={() => window.open(ref.url, '_blank')}
+                        >
+                          Abrir
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        );
+      }
+
+      ReactDOM.render(<ReferencesApp />, document.getElementById('root'));
+    </script>
+  </body>
 </html>
