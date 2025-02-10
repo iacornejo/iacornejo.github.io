@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Analizador de Referencias</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+    }
+    textarea {
+      width: 100%;
+      max-width: 600px;
+      height: 150px;
+      padding: 10px;
+      font-size: 14px;
+    }
+    button {
+      margin-top: 10px;
+      padding: 10px 20px;
+      font-size: 14px;
+      cursor: pointer;
+    }
+    ul {
+      list-style-type: none;
+      padding: 0;
+    }
+    li {
+      margin: 5px 0;
+    }
+    a {
+      text-decoration: none;
+      color: blue;
+    }
+  </style>
+</head>
+<body>
+  <h2>Analizador de Referencias</h2>
+  <textarea id="inputText" placeholder="Copia aquí la lista de referencias..."></textarea>
+  <br>
+  <button onclick="analizar()">Analizar</button>
+  <div id="result"></div>
+
+  <script>
+    function analizar() {
+      const texto = document.getElementById('inputText').value;
+      const lineas = texto.split('\n');
+      const ul = document.createElement('ul');
+      let encontrado = false;
+      // Expresión regular para detectar URLs que comiencen con http:// o https://
+      const urlRegex = /https?:\/\/[^\s]+/g;
+
+      lineas.forEach(linea => {
+        const trimmed = linea.trim();
+        if (trimmed.length > 0) {
+          const urls = trimmed.match(urlRegex);
+          if (urls) {
+            // Se toma la primera URL encontrada en la línea
+            const url = urls[0];
+            const li = document.createElement('li');
+            const a = document.createElement('a');
+            a.href = url;
+            a.target = '_blank';
+            a.rel = 'noopener noreferrer';
+            // Se muestra el texto completo de la línea como descripción del enlace
+            a.textContent = trimmed;
+            li.appendChild(a);
+            ul.appendChild(li);
+            encontrado = true;
+          }
+        }
+      });
+
+      const resultDiv = document.getElementById('result');
+      // Se limpia el contenido previo del área de resultados
+      resultDiv.innerHTML = "";
+      if (encontrado) {
+        resultDiv.appendChild(ul);
+      } else {
+        resultDiv.textContent = "No se encontraron referencias con URL.";
+      }
+    }
+  </script>
+</body>
+</html>
