@@ -8,19 +8,86 @@
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <style>
-        body { font-family: Arial, sans-serif; background-color: #f4f4f4; padding: 20px; }
-        .container { max-width: 700px; margin: auto; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 0 15px rgba(0, 0, 0, 0.2); }
-        textarea { width: 100%; height: 150px; margin-bottom: 20px; padding: 10px; border: 1px solid #ccc; border-radius: 5px; }
-        button { background-color: #007BFF; color: white; padding: 10px; border: none; border-radius: 5px; cursor: pointer; display: block; width: 100%; margin-bottom: 20px; font-size: 16px; }
-        button:hover { background-color: #0056b3; }
-        ul { list-style: none; padding: 0; }
-        li { background: #f8f9fa; margin: 10px 0; padding: 15px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; border: 1px solid #dee2e6; }
-        .details { flex-grow: 1; margin-right: 10px; }
-        .title { font-size: 16px; font-weight: bold; margin-bottom: 5px; color: #343a40; }
-        .domain { font-size: 14px; color: #6c757d; }
-        .pdf-indicator { font-weight: bold; color: red; }
-        .button-group button { background-color: #28a745; color: white; padding: 8px 12px; border: none; border-radius: 5px; cursor: pointer; font-size: 14px; }
-        .button-group button:hover { background-color: #218838; }
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            padding: 20px;
+        }
+        .container {
+            max-width: 700px;
+            margin: auto;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
+        }
+        textarea {
+            width: 100%;
+            height: 200px;
+            margin-bottom: 20px;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        button {
+            background-color: #007BFF;
+            color: white;
+            padding: 10px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            display: block;
+            width: 100%;
+            margin-bottom: 20px;
+            font-size: 16px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        ul {
+            list-style: none;
+            padding: 0;
+        }
+        li {
+            background: #f8f9fa;
+            margin: 10px 0;
+            padding: 15px;
+            border-radius: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border: 1px solid #dee2e6;
+        }
+        .details {
+            flex-grow: 1;
+            margin-right: 10px;
+        }
+        .title {
+            font-size: 16px;
+            font-weight: bold;
+            margin-bottom: 5px;
+            color: #343a40;
+        }
+        .domain {
+            font-size: 14px;
+            color: #6c757d;
+        }
+        .pdf-indicator {
+            font-weight: bold;
+            color: red;
+        }
+        .button-group button {
+            background-color: #28a745;
+            color: white;
+            padding: 8px 12px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .button-group button:hover {
+            background-color: #218838;
+        }
     </style>
 </head>
 <body>
@@ -28,7 +95,7 @@
         <h2 style="text-align: center;">Procesador de Referencias</h2>
         <textarea 
             id="referenceInput"
-            placeholder="Pega aquí tus referencias..."
+            placeholder="Pega aquí tus referencias (una por línea)..."
         ></textarea>
         <button onclick="processReferences()">Procesar Referencias</button>
         <ul id="referenceList"></ul>
@@ -36,19 +103,33 @@
     <script type="text/babel">
         function processReferences() {
             const text = document.getElementById("referenceInput").value;
-            const regex = /\d+\. (.*?), fecha de acceso: .*?, (https?:\/\/\S+)/g;
-            let matches;
-            let references = [];
-
-            while ((matches = regex.exec(text)) !== null) {
-                const url = matches[2];
-                const domain = new URL(url).hostname;
-                const isPDF = url.endsWith(".pdf");
-                references.push({ title: matches[1], url, domain, isPDF });
-            }
-
+            const lines = text.split('\n');
+            const urlRegex = /(.*?)(https?:\/\/\S+)/i;
             const referenceList = document.getElementById("referenceList");
             referenceList.innerHTML = "";
+
+            const references = lines.map((line) => {
+                const match = line.match(urlRegex);
+                if (!match) return null;
+
+                const title = match[1].trim().replace(/[\.,:]$/, '');
+                const url = match[2].trim();
+                const domain = (() => {
+                    try {
+                        return new URL(url).hostname;
+                    } catch {
+                        return "URL inválida";
+                    }
+                })();
+                const isPDF = url.toLowerCase().endsWith(".pdf");
+
+                return {
+                    title: title || url,
+                    url,
+                    domain,
+                    isPDF
+                };
+            }).filter(Boolean);
 
             references.forEach((ref, index) => {
                 const listItem = document.createElement("li");
